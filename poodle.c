@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "poodle.h"
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX_NUM 100 // 题目约束的计算机的最大数量
 
 ////////////////////////////////////////////////////////////////////////
 // Task 1
@@ -193,137 +193,29 @@ struct chooseSourceResult chooseSource(
 ////////////////////////////////////////////////////////////////////////
 // Task 3
 
-// 创建computerList节点
-static struct computerList *newComputerListNode(int computer)
+// 对数组的前n个元素排序
+void bubbleSort(int arr[], int n)
 {
-	struct computerList *newNode = (struct computerList *)malloc(sizeof(struct computerList));
-	if (newNode)
+	bool swapped;
+	for (int i = 0; i < n - 1; i++)
 	{
-		newNode->computer = computer;
-		newNode->next = NULL;
+		swapped = false;
+		for (int j = 0; j < n - i - 1; j++)
+		{
+			if (arr[j] > arr[j + 1])
+			{
+				int temp = arr[j];
+				arr[j] = arr[j + 1];
+				arr[j + 1] = temp;
+				swapped = true;
+			}
+		}
+		if (!swapped)
+		{
+			break;
+		}
 	}
-	return newNode;
 }
-
-// // 主函数实现
-// struct poodleResult poodle(
-// 	struct computer computers[], int numComputers,
-// 	struct connection connections[], int numConnections,
-// 	int startingComputer)
-// {
-// 	struct poodleResult result = {0, NULL};
-
-// 	// 检查起始计算机是否有效
-// 	if (startingComputer < 0 || startingComputer >= numComputers)
-// 	{
-// 		return result;
-// 	}
-
-// 	// 构建图
-// 	Graph *graph = buildGraph(computers, numComputers, connections, numConnections);
-// 	if (!graph)
-// 	{
-// 		return result;
-// 	}
-
-// 	// BFS队列和相关数组
-// 	int *queue = (int *)malloc(numComputers * sizeof(int));
-// 	int *time = (int *)malloc(numComputers * sizeof(int));
-// 	bool *visited = (bool *)calloc(numComputers, sizeof(bool));
-// 	int *parent = (int *)malloc(numComputers * sizeof(int));
-
-// 	// 初始化
-// 	for (int i = 0; i < numComputers; i++)
-// 	{
-// 		time[i] = INT_MAX;
-// 		parent[i] = -1;
-// 	}
-
-// 	int front = 0, rear = 0; // 队首指针与队尾指针
-// 	queue[rear++] = startingComputer;
-
-// 	time[startingComputer] = computers[startingComputer].poodleTime;
-// 	parent[startingComputer] = -1;
-
-// 	// BFS遍历
-// 	while (front < rear)
-// 	{
-// 		int current = queue[front++];
-// 		visited[current] = true;
-
-// 		Edge *neighbor = graph->array[current].head;
-// 		while (neighbor)
-// 		{
-// 			int neighborId = neighbor->dest;
-
-// 			// 检查安全等级是否允许入侵
-// 			if (!visited[neighborId] &&
-// 				graph->computers[current].securityLevel + 1 >= graph->computers[neighborId].securityLevel)
-// 			{
-// 				parent[neighborId] = current;
-// 				time[neighborId] = MIN(time[neighborId], time[current] + neighbor->transmissionTime + computers[neighborId].poodleTime);
-// 				queue[rear++] = neighborId;
-// 			}
-// 			neighbor = neighbor->next;
-// 		}
-// 	}
-
-// 	// 统计步骤数,并用来为result.steps分配内存
-// 	result.numSteps = 0;
-// 	for (int i = 0; i < numComputers; i++)
-// 	{
-// 		if (visited[i])
-// 		{
-// 			result.numSteps++;
-// 		}
-// 	}
-
-// 	result.steps = (struct step *)calloc(result.numSteps, sizeof(struct step));
-
-// 	// 填充步骤信息
-// 	int stepIndex = 0;
-// 	for (int i = 0; i < result.numSteps; i++)
-// 	{
-// 		int cur = queue[i];
-
-// 		result.steps[stepIndex].computer = cur;
-// 		result.steps[stepIndex].time = time[cur];
-
-// 		// 构建recipients链表
-// 		struct computerList *head = NULL;
-// 		struct computerList **tail = &head;
-
-// 		Edge *neighbor = graph->array[cur].head;
-// 		while (neighbor)
-// 		{
-// 			int neighborId = neighbor->dest;
-
-// 			// 检查是否是当前计算机入侵的
-// 			if (parent[neighborId] == cur)
-// 			{
-// 				struct computerList *newNode = newComputerListNode(neighborId);
-// 				if (newNode)
-// 				{
-// 					*tail = newNode;
-// 					tail = &(newNode->next);
-// 				}
-// 			}
-// 			neighbor = neighbor->next;
-// 		}
-
-// 		result.steps[stepIndex].recipients = head;
-// 		stepIndex++;
-// 	}
-
-// 	// 释放资源
-// 	free(queue);
-// 	free(time);
-// 	free(visited);
-// 	free(parent);
-// 	freeGraph(graph);
-
-// 	return result;
-// }
 
 struct poodleResult poodle(
 	struct computer computers[], int numComputers,
@@ -348,52 +240,55 @@ struct poodleResult poodle(
 	// 初始化
 	int *time = (int *)malloc(numComputers * sizeof(int));
 	int *parent = (int *)malloc(numComputers * sizeof(int));
-	bool *visited = (bool *)calloc(numComputers, sizeof(bool));
+	int *queue = (int *)malloc(MAX_NUM * sizeof(int));
 	bool *inResult = (bool *)calloc(numComputers, sizeof(bool));
 
 	for (int i = 0; i < numComputers; i++)
 	{
 		time[i] = INT_MAX;
 		parent[i] = -1;
+		queue[i] = -1;
 	}
 
 	time[startingComputer] = computers[startingComputer].poodleTime;
 	parent[startingComputer] = -1;
 
-	// Dijkstra算法
-	for (int count = 0; count < numComputers; count++)
+	int stepcount = 0;
+	// Dijkstra算法,最多尝试更新numComputers次。如果无法找到符合要求的节点，则会提前结束。
+	for (int i = 0; i < numComputers; i++)
 	{
-		// 找到当前时间最短的未访问节点
+		// 找到当前时间最短且未访问的节点u
 		int u = -1;
 		int minTime = INT_MAX;
 		for (int v = 0; v < numComputers; v++)
 		{
-			if (!visited[v] && time[v] < minTime)
+			if (!inResult[v] && time[v] < minTime)
 			{
 				minTime = time[v];
 				u = v;
 			}
 		}
 
-		// 如果没有找到可访问的节点，提前结束
+		// 如果无法找到符合要求的节点，提前结束
 		if (u == -1)
 			break;
 
-		visited[u] = true;
+		// 如果找到了符合要求的节点，则将其标记为inResult，并将其加入queue的队尾
+		inResult[u] = true;
+		queue[stepcount++] = u;
 
-		// 更新邻居节点的时间
+		// 尝试更新邻居节点的时间
 		Edge *neighbor = graph->array[u].head;
 		while (neighbor)
 		{
 			int v = neighbor->dest;
 			int newTime = time[u] + neighbor->transmissionTime + computers[v].poodleTime;
 
-			// 检查安全等级和更短时间
-			if (!visited[v] &&
+			// 如果v未被标记为inResult，且安全等级合法，并且时间可以变得更短，则更新时间
+			if (!inResult[v] &&
 				computers[u].securityLevel + 1 >= computers[v].securityLevel &&
 				newTime < time[v])
 			{
-
 				time[v] = newTime;
 				parent[v] = u;
 			}
@@ -401,70 +296,56 @@ struct poodleResult poodle(
 		}
 	}
 
-	// 统计步骤数
-	result.numSteps = 0;
-	for (int i = 0; i < numComputers; i++)
-	{
-		if (visited[i])
-		{
-			result.numSteps++;
-		}
-	}
+	// 算法结束后，将代表步骤数的stepcount赋值给result (即所有可以被入侵的计算机数量)
+	result.numSteps = stepcount;
 
-	// 创建步骤数组并按时间排序
+	// 初始化步骤数组result.steps，并按queue的顺序，对每一步填充计算机序号cur，以及它被入侵的时刻
 	result.steps = (struct step *)calloc(result.numSteps, sizeof(struct step));
-	int stepIndex = 0;
-	for (int i = 0; i < numComputers; i++)
-	{
-		if (visited[i])
-		{
-			result.steps[stepIndex].computer = i;
-			result.steps[stepIndex].time = time[i];
-			stepIndex++;
-		}
-	}
 
-	// 按时间排序步骤（简单的冒泡排序）
-	for (int i = 0; i < result.numSteps - 1; i++)
+	for (int i = 0; i < stepcount; i++)
 	{
-		for (int j = i + 1; j < result.numSteps; j++)
+		int cur = queue[i];
+		result.steps[i].computer = cur;
+		result.steps[i].time = time[cur];
+
+		struct computerList *recipients = NULL;
+		struct computerList **tail = &recipients;
+
+		// 找出cur入侵的所有子节点,并且确保按升序输出
+		int *sortArray = (int *)malloc(MAX_NUM * sizeof(int));
+		int sortArrayIndex = 0;
+		Edge *neighbor = graph->array[cur].head;
+		while (neighbor)
 		{
-			if (result.steps[i].time > result.steps[j].time)
+			int d = neighbor->dest;
+			if (parent[d] == cur)
 			{
-				struct step temp = result.steps[i];
-				result.steps[i] = result.steps[j];
-				result.steps[j] = temp;
+				sortArray[sortArrayIndex++] = d;
 			}
+			neighbor = neighbor->next;
 		}
-	}
 
-	// 填充recipients信息
-	for (int i = 0; i < result.numSteps; i++)
-	{
-		int cur = result.steps[i].computer;
-		struct computerList *head = NULL;
-		struct computerList **tail = &head;
+		bubbleSort(sortArray, sortArrayIndex);
 
-		// 找出所有子节点
-		for (int j = 0; j < numComputers; j++)
+		for (int i = 0; i < sortArrayIndex; i++)
 		{
-			if (parent[j] == cur)
-			{
-				struct computerList *newNode = newComputerListNode(j);
-				if (newNode)
-				{
-					*tail = newNode;
-					tail = &(newNode->next);
-				}
-			}
+			// 为排序后的sortArray中的元素，创建computerList节点，并插入链表
+			struct computerList *newNode = (struct computerList *)malloc(sizeof(struct computerList));
+			newNode->computer = sortArray[i];
+			newNode->next = NULL;
+
+			*tail = newNode;
+			tail = &(newNode->next);
 		}
-		result.steps[i].recipients = head;
+
+		result.steps[i].recipients = recipients;
+		free(sortArray);
 	}
 
-	// 释放资源
+	// 释放内存资源
 	free(time);
 	free(parent);
-	free(visited);
+	free(queue);
 	free(inResult);
 	freeGraph(graph);
 
