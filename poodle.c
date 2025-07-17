@@ -125,13 +125,85 @@ struct chooseSourceResult chooseSource(
 	struct connection connections[], int numConnections
 );
 */
-struct chooseSourceResult chooseSource(
-	struct computer computers[], int numComputers,
-	struct connection connections[], int numConnections)
-{
-	struct chooseSourceResult res = {0, 0, NULL};
 
-	return res;
+// DFS辅助函数
+static void dfs(Graph* graph, int v, bool visited[], int* count) {
+    visited[v] = true;
+    (*count)++;
+    
+    Edge* node = graph->array[v].head;
+    while (node) {
+        int neighbor = node->dest;
+        // 检查安全等级是否允许入侵
+        if (!visited[neighbor] && 
+            graph->computers[v].securityLevel + 1 >= graph->computers[neighbor].securityLevel) {
+            dfs(graph, neighbor, visited, count);
+        }
+        node = node->next;
+    }
+}
+
+struct chooseSourceResult chooseSource(
+    struct computer computers[], int numComputers,
+    struct connection connections[], int numConnections) 
+{
+    struct chooseSourceResult res = {0, 0, NULL};
+    
+    // 构建图
+    Graph* graph = buildGraph(computers, numComputers, connections, numConnections);
+    if (!graph) return res;
+    
+    int maxCount = 0;
+    int bestSource = 0;
+    int* bestComputers = NULL;
+    
+    // 遍历所有计算机作为源节点
+    for (int src = 0; src < numComputers; src++) {
+        bool* visited = (bool*)calloc(numComputers, sizeof(bool));
+        
+        int count = 0;
+        dfs(graph, src, visited, &count);
+        
+        // 更新最大计数和最佳源节点
+        if (count > maxCount || 
+            (count == maxCount && src < bestSource)) {
+            maxCount = count;
+            bestSource = src;
+            
+            // 保存被入侵的计算机列表
+            free(bestComputers);
+            bestComputers = (int*)malloc(count * sizeof(int));
+            
+			int index = 0;
+			for (int i = 0; i < numComputers; i++) {
+				if (visited[i]) {
+					bestComputers[index++] = i;
+				}
+			}
+			// 升序排序
+			for (int i = 0; i < count - 1; i++) {
+				for (int j = i + 1; j < count; j++) {
+					if (bestComputers[i] > bestComputers[j]) {
+						int temp = bestComputers[i];
+						bestComputers[i] = bestComputers[j];
+						bestComputers[j] = temp;
+					}
+				}
+			}
+            
+        }
+        
+        free(visited);
+    }
+    
+    freeGraph(graph);
+    
+    // 设置结果
+    res.sourceComputer = bestSource;
+    res.numComputers = maxCount;
+    res.computers = bestComputers;
+    
+    return res;
 }
 
 ////////////////////////////////////////////////////////////////////////

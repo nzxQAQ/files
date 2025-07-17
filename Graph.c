@@ -23,6 +23,7 @@ Graph *buildGraph(struct computer computers[], int numComputers,
         return NULL;
 
     graph->numComputers = numComputers;
+    graph->computers = computers;
     graph->array = (AdjList *)calloc(numComputers, sizeof(AdjList));
     if (!graph->array)
     {
