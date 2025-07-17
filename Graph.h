@@ -12,11 +12,11 @@ typedef struct Edge
     struct Edge *next;    // 指向下一条边的指针
 } Edge;
 
-// 点
+// 邻接表(一个存储节点信息和链表的数组)
 typedef struct AdjList
 {
-    Edge *head;               // 指向边链表的指针
     struct computer computer; // 存储该节点的计算机信息
+    Edge *head;               // 指向边链表的指针
 } AdjList;
 
 // 图
