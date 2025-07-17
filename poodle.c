@@ -44,7 +44,7 @@ struct probePathResult probePath(
 	// 构建邻接表图
 	Graph *graph = buildGraph(computers, numComputers, connections, numConnections);
 
-	bool visited[250000]; // visited数组用来记录计算机是否已被访问过。题目约束计算机的数量最多为 250000 台
+	bool *visited = (bool *)calloc(graph->numComputers, sizeof(bool));
 
 	for (int i = 0; i < numComputers; i++)
 	{
@@ -76,6 +76,7 @@ struct probePathResult probePath(
 		{
 			res.status = NO_CONNECTION;
 			res.elapsedTime = countTime;
+			free(visited);
 			freeGraph(graph);
 			return res;
 		}
@@ -85,14 +86,15 @@ struct probePathResult probePath(
 		{
 			res.status = NO_PERMISSION;
 			res.elapsedTime = countTime;
+			free(visited);
 			freeGraph(graph);
 			return res;
 		}
 
-		// 累加传输时间
+		// 累加传输时间transmissionTime(边的权重)
 		countTime += transmissionTime;
 
-		// 只有初次访问该计算机，才需要计算poodleTime
+		// 只有初次访问该计算机，才需要计算poodleTime(点的权重)
 		if (!visited[current])
 		{
 			countTime += computers[current].poodleTime;
@@ -103,13 +105,26 @@ struct probePathResult probePath(
 	}
 
 	res.elapsedTime = countTime;
+	free(visited);
 	freeGraph(graph);
 	return res;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // Task 2
+/*
 
+struct chooseSourceResult {
+	int sourceComputer;
+	int numComputers;
+	int *computers;
+};
+
+struct chooseSourceResult chooseSource(
+	struct computer computers[], int numComputers,
+	struct connection connections[], int numConnections
+);
+*/
 struct chooseSourceResult chooseSource(
 	struct computer computers[], int numComputers,
 	struct connection connections[], int numConnections)

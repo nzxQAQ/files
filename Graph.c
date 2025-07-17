@@ -16,7 +16,7 @@ Edge *createEdge(int dest, int transmissionTime)
 }
 
 Graph *buildGraph(struct computer computers[], int numComputers,
-                           struct connection connections[], int numConnections)
+                  struct connection connections[], int numConnections)
 {
     Graph *graph = (Graph *)malloc(sizeof(Graph));
     if (!graph)
@@ -36,7 +36,6 @@ Graph *buildGraph(struct computer computers[], int numComputers,
         int dest = connections[i].computerB;
         int time = connections[i].transmissionTime;
 
-        // 添加到src的邻接表
         Edge *newEdge = createEdge(dest, time);
         if (newEdge)
         {
@@ -44,7 +43,6 @@ Graph *buildGraph(struct computer computers[], int numComputers,
             graph->array[src].head = newEdge;
         }
 
-        // 因为是无向图，所以还要添加到dest的邻接表
         newEdge = createEdge(src, time);
         if (newEdge)
         {
