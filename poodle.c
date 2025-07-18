@@ -473,33 +473,60 @@ struct poodleResult advancedPoodle(
 		// 本轮Dijkstra结束
 	}
 
-	// 计算步骤数
-	int stepcount = 0;
+	// 释放内存资源
+	freeGraph(graph);
+	free(currentSecurity);
+	free(sourceQueue);
+	free(time);
+
+	// 为步骤信息排序
+	int stepCount = 0;
+	int *resComputer = (int *)malloc(numComputers * sizeof(int));
+	int *resTime = (int *)malloc(numComputers * sizeof(int));
 
 	for (int i = 0; i < numComputers; i++)
 	{
 		if (poodledTime[i] != INT_MAX)
 		{
-			stepcount++;
+			resComputer[stepCount] = i;
+			resTime[stepCount] = poodledTime[i];
+			stepCount++;
 		}
 	}
 
-	res.numSteps = numComputers;
-	res.steps = (struct step *)calloc(numComputers, sizeof(struct step));
-	// 填充步骤信息
-	for (int i = 0; i < numComputers; i++)
+	// 排序
+	for (int i = 0; i < stepCount - 1; i++)
 	{
-		res.steps[i].computer = i;
-		res.steps[i].time = poodledTime[i];
+		for (int j = 0; j < stepCount - i - 1; j++)
+		{
+			if (resTime[j] > resTime[j + 1])
+			{
+				int tempTime = resTime[j];
+				resTime[j] = resTime[j + 1];
+				resTime[j + 1] = tempTime;
+
+				int tempComputer = resComputer[j];
+				resComputer[j] = resComputer[j + 1];
+				resComputer[j + 1] = tempComputer;
+			}
+		}
+	}
+
+	res.numSteps = stepCount;
+	res.steps = (struct step *)calloc(stepCount, sizeof(struct step));
+
+	// 填充步骤信息
+	for (int i = 0; i < stepCount; i++)
+	{
+		res.steps[i].computer = resComputer[i];
+		res.steps[i].time = resTime[i];
 		res.steps[i].recipients = NULL;
 	}
 
-	// 释放资源
-	free(time);
+	// 释放内存资源
 	free(poodledTime);
-	free(currentSecurity);
-	free(sourceQueue);
-	freeGraph(graph);
+	free(resComputer);
+	free(resTime);
 
 	return res;
 }
