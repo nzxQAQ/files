@@ -142,8 +142,6 @@ struct chooseSourceResult chooseSource(
 
 	// 构建图
 	Graph *graph = buildGraph(computers, numComputers, connections, numConnections);
-	if (!graph)
-		return res;
 
 	int maxCount = 0;
 	int bestSource = 0;
@@ -222,20 +220,10 @@ struct poodleResult poodle(
 	struct connection connections[], int numConnections,
 	int startingComputer)
 {
-	struct poodleResult result = {0, NULL};
-
-	// 检查起始计算机是否有效
-	if (startingComputer < 0 || startingComputer >= numComputers)
-	{
-		return result;
-	}
+	struct poodleResult res = {0, NULL};
 
 	// 构建图
 	Graph *graph = buildGraph(computers, numComputers, connections, numConnections);
-	if (!graph)
-	{
-		return result;
-	}
 
 	// 初始化
 	int *time = (int *)malloc(numComputers * sizeof(int));
@@ -297,21 +285,21 @@ struct poodleResult poodle(
 	}
 
 	// 算法结束后，将代表步骤数的stepcount赋值给result (即所有可以被入侵的计算机数量)
-	result.numSteps = stepcount;
+	res.numSteps = stepcount;
 
 	// 初始化步骤数组result.steps，并按queue的顺序，对每一步填充计算机序号cur，以及它被入侵的时刻
-	result.steps = (struct step *)calloc(result.numSteps, sizeof(struct step));
+	res.steps = (struct step *)calloc(res.numSteps, sizeof(struct step));
 
 	for (int i = 0; i < stepcount; i++)
 	{
 		int cur = queue[i];
-		result.steps[i].computer = cur;
-		result.steps[i].time = time[cur];
+		res.steps[i].computer = cur;
+		res.steps[i].time = time[cur];
 
 		struct computerList *recipients = NULL;
 		struct computerList **tail = &recipients;
 
-		// 找出cur入侵的所有子节点,并且确保按升序输出
+		// task3的专属任务：找出cur入侵的所有子节点,并且确保按升序输出
 		int *sortArray = (int *)malloc(MAX_NUM * sizeof(int));
 		int sortArrayIndex = 0;
 		Edge *neighbor = graph->array[cur].head;
@@ -338,7 +326,7 @@ struct poodleResult poodle(
 			tail = &(newNode->next);
 		}
 
-		result.steps[i].recipients = recipients;
+		res.steps[i].recipients = recipients;
 		free(sortArray);
 	}
 
@@ -349,7 +337,7 @@ struct poodleResult poodle(
 	free(inResult);
 	freeGraph(graph);
 
-	return result;
+	return res;
 }
 
 ////////////////////////////////////////////////////////////////////////
