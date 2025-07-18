@@ -345,7 +345,7 @@ struct poodleResult poodle(
 
 /**
  * Describe your solution in detail here:
- *
+ * BFS+Djikstra
  * TODO
  */
 struct poodleResult advancedPoodle(
@@ -354,6 +354,152 @@ struct poodleResult advancedPoodle(
 	int sourceComputer)
 {
 	struct poodleResult res = {0, NULL};
+
+	// 构建图
+	Graph *graph = buildGraph(computers, numComputers, connections, numConnections);
+	if (!graph)
+	{
+		return res;
+	}
+
+	// 初始化数据结构
+	int *time = (int *)malloc(numComputers * sizeof(int));
+	int *poodledTime = (int *)malloc(numComputers * sizeof(int));
+	int *currentSecurity = (int *)malloc(numComputers * sizeof(int));
+	int *sourceQueue = (int *)malloc(numComputers * sizeof(int));
+	int sourceFront = 0, sourceRear = 0;
+
+	for (int i = 0; i < numComputers; i++)
+	{
+		time[i] = INT_MAX;
+		poodledTime[i] = INT_MAX;
+		currentSecurity[i] = computers[i].securityLevel;
+	}
+
+	// 初始化第一个源计算机
+	poodledTime[sourceComputer] = computers[sourceComputer].poodleTime;
+	int MaxSourceSecLevel = computers[sourceComputer].securityLevel;
+
+	// 题目给的第一个源计算机入队
+	sourceQueue[sourceRear++] = sourceComputer;
+
+	// 处理源计算机队列
+	while (sourceFront < sourceRear)
+	{
+		// 取出sourceQueue队列中的第一个源计算机
+		int currentSource = sourceQueue[sourceFront++];
+		int sourceSecLevel = currentSecurity[currentSource];
+
+		if (sourceSecLevel > MaxSourceSecLevel)
+		{
+			for (int i = 0; i < numComputers; i++)
+			{
+				if (poodledTime[i] == INT_MAX)
+				{
+					poodledTime[i] = time[i];
+				}
+				time[i] = INT_MAX;
+			}
+		}
+		time[currentSource] = poodledTime[currentSource];
+
+		// 把源计算机currentSource作为Djikstra的源点u
+		bool *inDijkstra = (bool *)calloc(numComputers, sizeof(bool));
+		int u = currentSource;
+
+		// 利用Dijkstra算法处理当前源计算机u，最多需要numComputers - 1步
+		for (int i = 0; i < numComputers - 1; i++)
+		{
+			inDijkstra[u] = true;
+
+			// 更新u的邻居节点v
+			Edge *neighbor = graph->array[u].head;
+			while (neighbor)
+			{
+				// v是与u相连接的节点
+				int v = neighbor->dest;
+				int newTime = time[u] + neighbor->transmissionTime + computers[v].poodleTime;
+
+				if (!inDijkstra[v])
+				{
+					// 1.遇到不大于本轮安全等级sourceSecLevel的节点v
+					if (currentSecurity[v] <= sourceSecLevel && newTime < time[v])
+					{
+						time[v] = newTime;
+						currentSecurity[v] = sourceSecLevel;
+					}
+
+					// 2.遇到比本轮安全等级sourceSecLevel高1级的节点，则加入源队列
+					if (currentSecurity[v] == sourceSecLevel + 1 && newTime < time[v])
+					{
+						time[v] = newTime;
+
+						// 避免重复入队，造成性能开销
+						bool alreadyInQueue = false;
+						for (int j = 0; j < sourceRear; j++)
+						{
+							if (sourceQueue[j] == v)
+							{
+								alreadyInQueue = true;
+								break;
+							}
+						}
+						if (!alreadyInQueue)
+						{
+							sourceQueue[sourceRear++] = v;
+						}
+					}
+				}
+				neighbor = neighbor->next;
+			}
+
+			// 寻找Djikstra的下一个节点u
+			u = -1;
+			int minTime = INT_MAX;
+			for (int v = 0; v < numComputers; v++)
+			{
+				if (!inDijkstra[v] && time[v] < minTime)
+				{
+					minTime = time[v];
+					u = v;
+				}
+			}
+
+			if (u == -1)
+				break;
+		}
+
+		free(inDijkstra);
+		// 本轮Dijkstra结束
+	}
+
+	// 计算步骤数
+	int stepcount = 0;
+
+	for (int i = 0; i < numComputers; i++)
+	{
+		if (poodledTime[i] != INT_MAX)
+		{
+			stepcount++;
+		}
+	}
+
+	res.numSteps = numComputers;
+	res.steps = (struct step *)calloc(numComputers, sizeof(struct step));
+	// 填充步骤信息
+	for (int i = 0; i < numComputers; i++)
+	{
+		res.steps[i].computer = i;
+		res.steps[i].time = poodledTime[i];
+		res.steps[i].recipients = NULL;
+	}
+
+	// 释放资源
+	free(time);
+	free(poodledTime);
+	free(currentSecurity);
+	free(sourceQueue);
+	freeGraph(graph);
 
 	return res;
 }
