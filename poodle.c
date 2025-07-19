@@ -360,22 +360,21 @@ struct poodleResult advancedPoodle(
 	}
 
 	// 初始化数据结构
-	int *time = (int *)malloc(numComputers * sizeof(int));
-	int *poodledTime = (int *)malloc(numComputers * sizeof(int));
-	int *currentSecurity = (int *)malloc(numComputers * sizeof(int));
-	int *sourceQueue = (int *)malloc(numComputers * sizeof(int));
-	int sourceFront = 0, sourceRear = 0;
+	int *time = (int *)malloc(numComputers * sizeof(int));			  // 每轮Dijkstra过程中计算出的局部最短入侵时间
+	int *minTime = (int *)malloc(numComputers * sizeof(int));		  // 全局最短入侵时间
+	int *currentSecurity = (int *)malloc(numComputers * sizeof(int)); // 实时安全等级
+	int *sourceQueue = (int *)malloc(numComputers * sizeof(int));	  // 源计算机队列，由数组和队首指针与队尾指针两个指针模拟
+	int sourceFront = 0, sourceRear = 0;							  // sourceQueue的队首指针与队尾指针
 
 	for (int i = 0; i < numComputers; i++)
 	{
 		time[i] = INT_MAX;
-		poodledTime[i] = INT_MAX;
+		minTime[i] = INT_MAX;
 		currentSecurity[i] = computers[i].securityLevel;
 	}
 
-	// 初始化第一个源计算机
-	poodledTime[sourceComputer] = computers[sourceComputer].poodleTime;
-	int MaxSourceSecLevel = computers[sourceComputer].securityLevel;
+	// 初始化第一个源计算机的全局最短入侵时间
+	minTime[sourceComputer] = computers[sourceComputer].poodleTime;
 
 	// 题目给的第一个源计算机入队
 	sourceQueue[sourceRear++] = sourceComputer;
@@ -387,18 +386,18 @@ struct poodleResult advancedPoodle(
 		int currentSource = sourceQueue[sourceFront++];
 		int sourceSecLevel = currentSecurity[currentSource];
 
-		if (sourceSecLevel > MaxSourceSecLevel)
+		// 把可能出现的更优的局部最短时间time，保存进全局最短时间数组minTime。在开始Dijkstra前，要把time数组初始化为INT_MAX。
+		for (int i = 0; i < numComputers; i++)
 		{
-			for (int i = 0; i < numComputers; i++)
+			if (minTime[i] > time[i])
 			{
-				if (poodledTime[i] > time[i])
-				{
-					poodledTime[i] = time[i];
-				}
-				time[i] = INT_MAX;
+				minTime[i] = time[i];
 			}
+			time[i] = INT_MAX;
 		}
-		time[currentSource] = poodledTime[currentSource];
+
+		// 用全局最短时间初始化当前源计算机currentSource的局部最短时间
+		time[currentSource] = minTime[currentSource];
 
 		// 把源计算机currentSource作为Djikstra的源点u
 		bool *inDijkstra = (bool *)calloc(numComputers, sizeof(bool));
@@ -483,10 +482,10 @@ struct poodleResult advancedPoodle(
 
 	for (int i = 0; i < numComputers; i++)
 	{
-		if (poodledTime[i] != INT_MAX)
+		if (minTime[i] != INT_MAX)
 		{
 			resComputer[stepCount] = i;
-			resTime[stepCount] = poodledTime[i];
+			resTime[stepCount] = minTime[i];
 			stepCount++;
 		}
 	}
@@ -521,7 +520,7 @@ struct poodleResult advancedPoodle(
 	}
 
 	// 释放内存资源
-	free(poodledTime);
+	free(minTime);
 	free(resComputer);
 	free(resTime);
 
