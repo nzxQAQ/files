@@ -40,15 +40,15 @@ Graph *buildGraph(struct computer computers[], int numComputers,
         Edge *newEdge = createEdge(dest, time);
         if (newEdge)
         {
-            newEdge->next = graph->array[src].head;
-            graph->array[src].head = newEdge;
+            newEdge->next = graph->array[src].headEdge;
+            graph->array[src].headEdge = newEdge;
         }
 
         newEdge = createEdge(src, time);
         if (newEdge)
         {
-            newEdge->next = graph->array[dest].head;
-            graph->array[dest].head = newEdge;
+            newEdge->next = graph->array[dest].headEdge;
+            graph->array[dest].headEdge = newEdge;
         }
     }
 
@@ -63,7 +63,7 @@ void freeGraph(Graph *graph)
         {
             for (int i = 0; i < graph->numComputers; i++)
             {
-                Edge *current = graph->array[i].head;
+                Edge *current = graph->array[i].headEdge;
                 while (current)
                 {
                     Edge *temp = current;

@@ -18,14 +18,14 @@ static int findConnectionTime(Graph *graph, int src, int dest)
 	if (src == dest)
 		return 0; // 自环连接，可看作边长为0
 
-	Edge *current = graph->array[src].head;
-	while (current)
+	Edge *edge = graph->array[src].headEdge;
+	while (edge)
 	{
-		if (current->dest == dest)
+		if (edge->dest == dest)
 		{
-			return current->transmissionTime;
+			return edge->transmissionTime;
 		}
-		current = current->next;
+		edge = edge->next;
 	}
 	return -1; // 未找到连接
 }
@@ -50,11 +50,6 @@ struct probePathResult probePath(
 	for (int i = 0; i < numComputers; i++)
 	{
 		visited[i] = false;
-	}
-
-	if (pathLength == 0)
-	{
-		return res;
 	}
 
 	// 处理path[0]
@@ -115,22 +110,22 @@ struct probePathResult probePath(
 // Task 2
 
 // DFS函数,遍历节点v可入侵的邻居节点
-static void dfs(Graph *graph, int v, bool visited[], int *count)
+static void dfs(Graph *graph, int u, bool visited[], int *count)
 {
-	visited[v] = true;
+	visited[u] = true;
 	(*count)++;
 
-	Edge *node = graph->array[v].head;
-	while (node)
+	Edge *edge = graph->array[u].headEdge;
+	while (edge)
 	{
-		int neighbor = node->dest;
-		// 检查安全等级是否允许入侵
-		if (!visited[neighbor] &&
-			graph->computers[v].securityLevel + 1 >= graph->computers[neighbor].securityLevel)
+		int v = edge->dest;
+		// 检查安全等级是否允许u入侵v
+		if (!visited[v] &&
+			graph->computers[u].securityLevel + 1 >= graph->computers[v].securityLevel)
 		{
-			dfs(graph, neighbor, visited, count);
+			dfs(graph, v, visited, count);
 		}
-		node = node->next;
+		edge = edge->next;
 	}
 }
 
@@ -266,11 +261,11 @@ struct poodleResult poodle(
 		queue[stepcount++] = u;
 
 		// 尝试更新邻居节点的时间
-		Edge *neighbor = graph->array[u].head;
-		while (neighbor)
+		Edge *edge = graph->array[u].headEdge;
+		while (edge)
 		{
-			int v = neighbor->dest;
-			int newTime = time[u] + neighbor->transmissionTime + computers[v].poodleTime;
+			int v = edge->dest;
+			int newTime = time[u] + edge->transmissionTime + computers[v].poodleTime;
 
 			// 如果v未被标记为inResult，且安全等级合法，并且时间可以变得更短，则更新时间
 			if (!inResult[v] &&
@@ -280,7 +275,7 @@ struct poodleResult poodle(
 				time[v] = newTime;
 				parent[v] = u;
 			}
-			neighbor = neighbor->next;
+			edge = edge->next;
 		}
 	}
 
@@ -302,15 +297,15 @@ struct poodleResult poodle(
 		// task3的专属任务：找出cur入侵的所有子节点,并且确保按升序输出
 		int *sortArray = (int *)malloc(MAX_NUM * sizeof(int));
 		int sortArrayIndex = 0;
-		Edge *neighbor = graph->array[cur].head;
-		while (neighbor)
+		Edge *edge = graph->array[cur].headEdge;
+		while (edge)
 		{
-			int d = neighbor->dest;
+			int d = edge->dest;
 			if (parent[d] == cur)
 			{
 				sortArray[sortArrayIndex++] = d;
 			}
-			neighbor = neighbor->next;
+			edge = edge->next;
 		}
 
 		bubbleSort(sortArray, sortArrayIndex);
@@ -394,7 +389,7 @@ struct poodleResult advancedPoodle(
 		{
 			for (int i = 0; i < numComputers; i++)
 			{
-				if (poodledTime[i] == INT_MAX)
+				if (poodledTime[i] > time[i])
 				{
 					poodledTime[i] = time[i];
 				}
@@ -407,18 +402,18 @@ struct poodleResult advancedPoodle(
 		bool *inDijkstra = (bool *)calloc(numComputers, sizeof(bool));
 		int u = currentSource;
 
-		// 利用Dijkstra算法处理当前源计算机u，最多需要numComputers - 1步
-		for (int i = 0; i < numComputers - 1; i++)
+		// 利用Dijkstra算法处理当前源计算机u
+		for (int i = 0; i < numComputers; i++)
 		{
 			inDijkstra[u] = true;
 
 			// 更新u的邻居节点v
-			Edge *neighbor = graph->array[u].head;
-			while (neighbor)
+			Edge *edge = graph->array[u].headEdge;
+			while (edge)
 			{
 				// v是与u相连接的节点
-				int v = neighbor->dest;
-				int newTime = time[u] + neighbor->transmissionTime + computers[v].poodleTime;
+				int v = edge->dest;
+				int newTime = time[u] + edge->transmissionTime + computers[v].poodleTime;
 
 				if (!inDijkstra[v])
 				{
@@ -450,7 +445,7 @@ struct poodleResult advancedPoodle(
 						}
 					}
 				}
-				neighbor = neighbor->next;
+				edge = edge->next;
 			}
 
 			// 寻找Djikstra的下一个节点u
@@ -494,7 +489,7 @@ struct poodleResult advancedPoodle(
 		}
 	}
 
-	// 排序
+	// 排序，升序输出
 	for (int i = 0; i < stepCount - 1; i++)
 	{
 		for (int j = 0; j < stepCount - i - 1; j++)

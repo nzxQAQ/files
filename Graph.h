@@ -16,14 +16,14 @@ typedef struct Edge
 typedef struct AdjList
 {
     struct computer computer; // 存储该节点的计算机信息
-    Edge *head;               // 指向边链表的指针
+    Edge *headEdge;           // 指向边链表的指针
 } AdjList;
 
 // 图
 typedef struct Graph
 {
     int numComputers;
-    AdjList *array; // 点数组
+    AdjList *array; // 数组
     struct computer *computers;
 } Graph;
 
