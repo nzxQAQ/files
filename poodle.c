@@ -258,7 +258,7 @@ struct poodleResult poodle(
 		if (u == -1)
 			break;
 
-		// 如果找到了符合要求的节点，则将其标记为inResult，并将其加入queue的队尾
+		// 如果找到了符合要求的节点，则将其标记为inDjikstra，并将其加入resQueue的队尾
 		inDjikstra[u] = true;
 		resQueue[stepcount++] = u;
 
@@ -269,7 +269,7 @@ struct poodleResult poodle(
 			int v = edge->dest;
 			int newTime = time[u] + edge->transmissionTime + computers[v].poodleTime;
 
-			// 如果v未被标记为inResult，且安全等级合法，并且时间可以变得更短，则更新时间
+			// 如果v未被标记为inDjikstra，且安全等级合法，并且时间可以变得更短，则更新时间
 			if (!inDjikstra[v] &&
 				computers[u].securityLevel + 1 >= computers[v].securityLevel &&
 				newTime < time[v])
@@ -284,7 +284,7 @@ struct poodleResult poodle(
 	// 算法结束后，将代表步骤数的stepcount赋值给result (即所有可以被入侵的计算机数量)
 	res.numSteps = stepcount;
 
-	// 初始化步骤数组result.steps，并按queue的顺序，对每一步填充计算机序号cur，以及它被入侵的时刻
+	// 初始化步骤数组result.steps，并按resQueue的顺序，对每一步填充计算机序号cur，以及它被入侵的时刻
 	res.steps = (struct step *)calloc(res.numSteps, sizeof(struct step));
 
 	for (int i = 0; i < stepcount; i++)
@@ -296,7 +296,7 @@ struct poodleResult poodle(
 		struct computerList *recipients = NULL;
 		struct computerList **tail = &recipients;
 
-		// task3的专属任务：找出cur入侵的所有子节点,并且确保按升序输出
+		// task3的专属任务：找出每台计算机cur入侵的所有子节点,并且确保按升序输出
 		int *sortArray = (int *)malloc(MAX_NUM * sizeof(int));
 		int sortArrayIndex = 0;
 		Edge *edge = graph->array[cur].headEdge;
