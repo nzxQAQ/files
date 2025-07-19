@@ -109,7 +109,7 @@ struct probePathResult probePath(
 ////////////////////////////////////////////////////////////////////////
 // Task 2
 
-// DFS函数,遍历节点v可入侵的邻居节点
+// DFS函数,遍历节点u可入侵的邻居节点
 static void dfs(Graph *graph, int u, bool visited[], int *count)
 {
 	visited[u] = true;
@@ -118,8 +118,10 @@ static void dfs(Graph *graph, int u, bool visited[], int *count)
 	Edge *edge = graph->array[u].headEdge;
 	while (edge)
 	{
+		// v 是 u 的邻居节点
 		int v = edge->dest;
-		// 检查安全等级是否允许u入侵v
+
+		// 检查安全等级是否允许 u 入侵 v
 		if (!visited[v] &&
 			graph->computers[u].securityLevel + 1 >= graph->computers[v].securityLevel)
 		{
@@ -223,14 +225,14 @@ struct poodleResult poodle(
 	// 初始化
 	int *time = (int *)malloc(numComputers * sizeof(int));
 	int *parent = (int *)malloc(numComputers * sizeof(int));
-	int *queue = (int *)malloc(MAX_NUM * sizeof(int));
-	bool *inResult = (bool *)calloc(numComputers, sizeof(bool));
+	int *resQueue = (int *)malloc(MAX_NUM * sizeof(int));
+	bool *inDjikstra = (bool *)calloc(numComputers, sizeof(bool));
 
 	for (int i = 0; i < numComputers; i++)
 	{
 		time[i] = INT_MAX;
 		parent[i] = -1;
-		queue[i] = -1;
+		resQueue[i] = -1;
 	}
 
 	time[startingComputer] = computers[startingComputer].poodleTime;
@@ -245,7 +247,7 @@ struct poodleResult poodle(
 		int minTime = INT_MAX;
 		for (int v = 0; v < numComputers; v++)
 		{
-			if (!inResult[v] && time[v] < minTime)
+			if (!inDjikstra[v] && time[v] < minTime)
 			{
 				minTime = time[v];
 				u = v;
@@ -257,8 +259,8 @@ struct poodleResult poodle(
 			break;
 
 		// 如果找到了符合要求的节点，则将其标记为inResult，并将其加入queue的队尾
-		inResult[u] = true;
-		queue[stepcount++] = u;
+		inDjikstra[u] = true;
+		resQueue[stepcount++] = u;
 
 		// 尝试更新邻居节点的时间
 		Edge *edge = graph->array[u].headEdge;
@@ -268,7 +270,7 @@ struct poodleResult poodle(
 			int newTime = time[u] + edge->transmissionTime + computers[v].poodleTime;
 
 			// 如果v未被标记为inResult，且安全等级合法，并且时间可以变得更短，则更新时间
-			if (!inResult[v] &&
+			if (!inDjikstra[v] &&
 				computers[u].securityLevel + 1 >= computers[v].securityLevel &&
 				newTime < time[v])
 			{
@@ -287,7 +289,7 @@ struct poodleResult poodle(
 
 	for (int i = 0; i < stepcount; i++)
 	{
-		int cur = queue[i];
+		int cur = resQueue[i];
 		res.steps[i].computer = cur;
 		res.steps[i].time = time[cur];
 
@@ -328,8 +330,8 @@ struct poodleResult poodle(
 	// 释放内存资源
 	free(time);
 	free(parent);
-	free(queue);
-	free(inResult);
+	free(resQueue);
+	free(inDjikstra);
 	freeGraph(graph);
 
 	return res;
@@ -340,7 +342,7 @@ struct poodleResult poodle(
 
 /**
  * Describe your solution in detail here:
- * BFS+Djikstra
+ *
  * TODO
  */
 struct poodleResult advancedPoodle(
@@ -424,7 +426,7 @@ struct poodleResult advancedPoodle(
 						currentSecurity[v] = sourceSecLevel;
 					}
 
-					// 2.遇到比本轮安全等级sourceSecLevel高1级的节点，则加入源队列
+					// 2.遇到比本轮安全等级sourceSecLevel高1级的节点v
 					if (currentSecurity[v] == sourceSecLevel + 1 && newTime < time[v])
 					{
 						time[v] = newTime;
